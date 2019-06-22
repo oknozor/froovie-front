@@ -1,6 +1,7 @@
 
 use failure::Error;
 use yew::{html, Callback, Component, ComponentLink, Html, Renderable, ShouldRender};
+use yew::services::fetch::StatusCode;
 use yew::services::fetch::FetchTask;
 
 use crate::services::froovie_service::{FroovieService, MovieSearch};
@@ -8,6 +9,7 @@ use crate::services::froovie_service::{FroovieService, MovieSearch};
 pub struct MovieSearchModel {
     froovie: FroovieService,
     callback: Callback<Result<Vec<MovieSearch>, Error>>,
+    add_selection_callback: Callback<Result<StatusCode, Error>>,
     pub result: Vec<MovieSearch>,
     task: Option<FetchTask>,
     error: Option<String>,
@@ -16,6 +18,7 @@ pub struct MovieSearchModel {
 pub enum Msg {
     SearchResult(String),
     PickSelection(i32),
+    SelectionResult(Result<StatusCode, Error>),
     FroovieReady(Result<Vec<MovieSearch>, Error>),
 }
 
@@ -27,6 +30,7 @@ impl Component for MovieSearchModel {
         MovieSearchModel {
             froovie: FroovieService::new(),
             callback: link.send_back(Msg::FroovieReady),
+            add_selection_callback: link.send_back(Msg::SelectionResult),
             result: vec![],
             task: None,
             error: None,
@@ -42,18 +46,22 @@ impl Component for MovieSearchModel {
             Msg::FroovieReady(Ok(movies)) => {
                 self.result = movies;
             }
+            Msg::SelectionResult(Ok(StatusCode::OK)) => {
+                //
+            },
+            Msg::SelectionResult(_) => {
+                //
+            }
+            Msg::SelectionResult(Err(error)) => {
+                //
+            }
             Msg::FroovieReady(Err(error)) => {
                 self.result = vec![]; 
                 self.error = Some(error.to_string());
             }
             Msg::PickSelection(moviedb_id) => {
-                self.result = vec![
-                    MovieSearch {
-                        moviedb_id,
-                        title: "selected".to_string(),
-                        description: "pouet".to_string(),
-                        image_url: Some("pouet".to_string())
-                }]; 
+                let task = self.froovie.post_user_selection(moviedb_id, 1, self.add_selection_callback.clone());
+                self.task = Some(task);
             }
         }
         true

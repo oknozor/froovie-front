@@ -2,6 +2,7 @@ use failure::{format_err, Error};
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use yew::callback::Callback;
+use yew::services::fetch::StatusCode;
 use yew::format::{Json, Nothing};
 use yew::services::fetch::{FetchService, FetchTask, Request, Response};
 
@@ -29,9 +30,17 @@ pub struct MovieSearch {
     pub image_url: Option<String>,
 }
 
+// TODO : extract into a model/dto crate 
 #[derive(Serialize, Debug)]
 pub struct Query<'a> {
     pub value: &'a str
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserSelection {
+    pub user_id: i32,
+    pub moviedb_id: i32,
+
 }
 
 #[derive(Default)]
@@ -44,6 +53,30 @@ impl FroovieService {
         Self {
             web: FetchService::new(),
         }
+    }
+
+    pub fn post_user_selection(
+        &mut self,
+        moviedb_id: i32, 
+        user_id: i32,
+        callback: Callback<Result<StatusCode, Error>>,
+    ) -> FetchTask {
+        let url = format!("{}/users/selections", BACKEND);
+
+        let selection  = &UserSelection { user_id, moviedb_id };
+
+        let request = Request::post(url.as_str())
+                        .body(Json(&selection))
+                        .expect("Unable to build user selection");
+
+        let handler =  move |response: Response<Result<_, Error>>| {
+                callback.emit(Ok(response.status()))
+        }; 
+
+        self.web.fetch(
+            request,
+            handler.into()
+           )
     }
 
     pub fn get_user_selection(
