@@ -15,6 +15,7 @@ pub struct MovieSearchModel {
 
 pub enum Msg {
     SearchResult(String),
+    PickSelection(i32),
     FroovieReady(Result<Vec<MovieSearch>, Error>),
 }
 
@@ -45,6 +46,15 @@ impl Component for MovieSearchModel {
                 self.result = vec![]; 
                 self.error = Some(error.to_string());
             }
+            Msg::PickSelection(moviedb_id) => {
+                self.result = vec![
+                    MovieSearch {
+                        moviedb_id,
+                        title: "selected".to_string(),
+                        description: "pouet".to_string(),
+                        image_url: Some("pouet".to_string())
+                }]; 
+            }
         }
         true
     }
@@ -52,8 +62,14 @@ impl Component for MovieSearchModel {
 
 impl Renderable<MovieSearchModel> for MovieSearchModel {
     fn view(&self) -> Html<Self> {
-        let view_movie = |movie| html! {
-            <li> { movie } </li>
+        let view_movie = |movie: &MovieSearch, id: i32| html! {
+            <div> 
+                <p> { &movie.title.clone() } </p> 
+                <img src={ &movie.image_url.clone().unwrap_or_else(|| "".to_string()) },
+                    style="width: 200px",/>
+                <button onclick=|_| Msg::PickSelection(id),> { "Save"} </button>
+
+            </div>
         };
 
         html! {
@@ -63,7 +79,9 @@ impl Renderable<MovieSearchModel> for MovieSearchModel {
                value="brute",
                oninput=|query| Msg::SearchResult(query.value),
                />
-                <ul> { for self.result.iter().map(|movie| view_movie(movie.title.clone())) } </ul>
+                <ul> { for self.result.iter()
+                    .map(|movie| (movie, movie.moviedb_id))
+                    .map(|(movie, id)| view_movie(movie, id)) } </ul>
                 <p> { &format!("Error status: {:?}", &self.error) } </p>
             </div>
         }

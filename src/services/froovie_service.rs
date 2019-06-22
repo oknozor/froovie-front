@@ -26,6 +26,7 @@ pub struct MovieSearch {
     pub moviedb_id: i32,
     pub title: String,
     pub description: String,
+    pub image_url: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
